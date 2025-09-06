@@ -1,0 +1,10 @@
+customer_name,customer_address,customer_phone,courier,status,items
+Naruto Uzumaki,Hidden Leaf Village,789001234,1,preparing,"1,3"
+Son Goku,Mount Paozu,1,0,delivered,"0,2,4"
+Monkey D Luffy,Going Merry,798003344,2,out for delivery,"2,5"
+Light Yagami,Tokyo,789887334,1,preparing,"1,3,4"
+Ichigo Kurosaki,Karakura Town,777555123,2,delivered,"0,3"
+Eren Yeager,Shiganshina District,789988776,0,preparing,"1,2"
+Saitama,Z-City,755666999,1,preparing,"2,3"
+Sasuke Uchiha,Uchiha Compound,781234567,0,out for delivery,"0,1,4"
+Joseph Joestar,Speedwagon Avenue,7865428619,1,Delivered,"1,2,3"
