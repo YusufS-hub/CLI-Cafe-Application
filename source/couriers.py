@@ -1,22 +1,15 @@
-import csv
-Couriers_Path = '..\\data\\couriers.csv'
+import psycopg2 
+import os
+from dotenv import load_dotenv
+import my_mini_db
+
+
+Couriers_Path = '\\Users\\ysala\\OneDrive\\Documents\\DE-Gen\\yusuf-portfolio\\mini_project\\Week-5\\data\\couriers.csv'
 couriers = [] 
 
 
-
-# Load couriers from the file
-def load_couriers(file=Couriers_Path):
-    try:
-        with open(Couriers_Path, 'r') as file:
-            couriers_data = csv.DictReader(file)
-            for row in couriers_data:
-                couriers.append(({
-                    'name': row['courier_name'],
-                    'phone_number': int(row['courier_number'])
-                }))
-    except FileNotFoundError:
-        print("Courier file not found. Starting with an empty courier list.")
-    return couriers
+def clear_menu(): 
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def get_courier_menu():
     print('''
@@ -36,19 +29,15 @@ def get_courier_menu():
         print("Invalid Input Enter a Number")
         return
 
+def connect_db():
+    return psycopg2.connect(
+        host=os.getenv("POSTGRES_HOST"),
+        dbname=os.getenv("POSTGRES_DB"),
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD")
+    )
 
 
-# Redefining couriers to load from the CSV file
-couriers = load_couriers(file=Couriers_Path)
-
-# Function to View Couries 
-def view_courier():
-     with open(Couriers_Path, 'r') as file:
-        csv_reader = csv.DictReader(file)
-        for row in csv_reader:
-            print(row)
-
-#Creates new Couriers
 def create_courier():
     new_courier = input("Enter a new courier name you want to add: ")
     new_courier_phone = int(input("Enter a new courier phone number you want to add: "))
@@ -56,35 +45,59 @@ def create_courier():
         "name": new_courier,
         "phone_number": new_courier_phone
     }
-    couriers.append(new_dict) 
-    with open(Couriers_Path, 'a') as file:
-        csv_writer = csv.writer(file, delimiter=',')
-        csv_writer.writerow([new_dict['name'], new_dict['phone_number']])
+    couriers.append(new_dict)
 
-# Deletes selected courier by index
-def delete_courier():
-    for index, c in enumerate(couriers):
-        print(index , c) 
     try:
-        user_index = int(input("Enter the index value of the Courier you want to delete: "))
-        couriers.pop(user_index)
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        insert_sql = "INSERT INTO couriers (courier_name, courier_number) VALUES (%s, %s)"
+        cursor.execute(insert_sql, (new_courier, new_courier_phone))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Courier added to database successfully.")
+    except Exception as e:
+        print("Failed to insert Courier into database:", e)
+
+
+
+def delete_courier():
+    clear_menu()
+    my_mini_db.view_couriers()
+    try:
+        user_index = int(input("Enter the ID value of the Courier you want to delete: "))
     except (IndexError,ValueError):
         print('Invalid Input!')
-    with open(Couriers_Path,'w') as file:
-        csv_writer = csv.writer(file, delimiter=',')
-        csv_writer.writerow(['name', 'phone_number'])
-        for courier in couriers:
-            csv_writer.writerow([courier['name'],courier['phone_number']])
-
-# Updates Couriers Name by Index
-def update_courier():
-    for x, courier in enumerate(couriers):
-        print(x, courier['name'], courier['phone_number'])
     try:
-        user_index = int(input("Enter the index value of the courier you want to update: "))
-        if user_index < 0 or user_index >= len(couriers):
-            print("Invalid index.")
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        confirm = input(f"Are you sure you want to delete product ID {user_index}? (y/n): ").lower()
+        if confirm != 'y':
+            print("Deletion cancelled.")
             return
+
+        delete_sql = """
+            DELETE FROM couriers
+            WHERE courier_id = %s
+        """
+        cursor.execute(delete_sql, (user_index,))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Courier DELETED from database successfully.")
+    except Exception as e:
+        print("Failed to Delete Courier from database:", e)
+
+
+def update_courier():
+    clear_menu()
+    my_mini_db.view_couriers()
+    try:
+        user_index = int(input("Enter the ID value of the courier you want to update: "))
     except ValueError:
         print("Invalid input. Please enter a valid number.")
         return
@@ -95,26 +108,40 @@ def update_courier():
         print("Invalid price input. Please enter a valid number.")
         return
     try:
-        couriers[user_index]['name'] = new_courier_name
-        couriers[user_index]['phone_number'] = new_courier_number
-    except Exception:
-        print("An error occurred while updating the product.")
-        return
-    with open(Couriers_Path,'w', newline='') as file:
-        csv_writer = csv.writer(file, delimiter=',')
-        csv_writer.writerow(['name', 'phone_number'])
-        for courier in couriers:
-            csv_writer.writerow([courier['name'], courier['phone_number']])
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        update_sql = """
+            UPDATE couriers
+            SET courier_name = %s, courier_number = %s
+            WHERE courier_id = %s
+        """
+        cursor.execute(update_sql, (new_courier_name, new_courier_number, user_index))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Courier Updated in the database successfully.")
+    except Exception as e:
+        print("Failed to Update Courier in the database:", e)
 
 
-#Function To Save Couriers
+
 def save_couriers():
-    with open(Couriers_Path, 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['name', 'phone_number'])
-        for row in couriers:
-            writer.writerow([row['name'], row['phone_number']])
-    if len(couriers) == 0:
-        print("No products to save.")
-        return
-    print('Products were saved successfully')
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        # Insert couriers into database
+        insert_sql = "INSERT INTO couriers (courier_name, courier_number) VALUES (%s, %s)"
+        courier_tuples = [(courier['name'], courier['number']) for courier in couriers]
+        cursor.executemany(insert_sql, courier_tuples)
+
+        conn.commit()
+        print("Couriers were saved to the database successfully.")
+
+        cursor.close()
+        conn.close()
+
+    except Exception as e:
+        print("Error saving Couriers to the database:", e)

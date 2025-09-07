@@ -1,26 +1,22 @@
-import csv
+import psycopg2 
+import os
+from dotenv import load_dotenv
+import my_mini_db
 
-Orders_Path = '..\\data\\orders.csv'
+# Main Dictionary of Orders
+Orders_Path = '\\Users\\YusufS(DE-X6-LM)\\Documents\\DE-Gen\\yusuf-portfolio\\mini_project\\Week-6\\data\\orders.csv'
 orders_list = []
 
+def clear_menu(): 
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-def load_orders(file=Orders_Path):
-    try:
-        with open(Orders_Path, 'r') as file:
-            orders_data = csv.DictReader(file)
-            for row in orders_data:
-                orders_list.append(({
-                    'customer_name': row['customer_name'],
-                    'customer_address': row['customer_address'],
-                    'customer_phone': int(row ['customer_phone']),
-                    'courier': row['courier'],
-                    'status': row['status'],
-                    'items': (row['items']),
-                }))
-    except FileNotFoundError:
-        print("Courier file not found. Starting with an empty courier list.")
-    return orders_list
-
+def connect_db():
+    return psycopg2.connect(
+        host=os.getenv("POSTGRES_HOST"),
+        dbname=os.getenv("POSTGRES_DB"),
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD")
+    )
 
 
 def get_order_menu():
@@ -39,47 +35,49 @@ def get_order_menu():
     return int(input("Enter your choice: "))
 
 
-orders_list = load_orders(file=Orders_Path)
-
-
-def view_order():
-     with open(Orders_Path, 'r', newline='') as file:
-        csv_reader = csv.DictReader(file)
-        for row in csv_reader:
-            print(row)
+# def view_order():
+#      with open(Orders_Path, 'r', newline='') as file:
+#         csv_reader = csv.DictReader(file)
+#         for row in csv_reader:
+#             print(row)
    
 def create_order():
     name = input("Enter New Customer Name: ")
     address = input("Enter New Customer Address: ")
     phone = int(input("Enter New Phone Number: "))
-    courier = input('Enter the index of the courier delivering the order: ')
     items = str(input('Enter the index of the items orders: '))
 
     new_dict = {
         'customer_name': name,
         'customer_address' : address,
         'customer_phone': phone,
-        'courier': courier,
         'status': 'Preparing',
         'items': items
 
     }
-    orders_list.append(new_dict)
-    with open(Orders_Path, 'a', newline='') as file:
-        csv_writer = csv.writer(file, delimiter=',')
-        csv_writer.writerow([new_dict['customer_name'], new_dict["customer_address"], 
-                             new_dict['customer_phone'], new_dict["courier"],
-                             new_dict["status"],new_dict["items"]])
+
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        insert_sql = "INSERT INTO orders (customer_name, customer_address, customer_phone, items) VALUES (%s, %s,%s,%s)"
+        cursor.execute(insert_sql, (name, address, phone, items))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Order added to database successfully.")
+    except Exception as e:
+        print("Failed to insert Order into database:", e)
+
+                    
 
 
 def update_order():
-    for index, order in enumerate(orders_list):
-        print(index, order['customer_name'], order['customer_address'],
-              order['customer_phone'], order['courier'],
-              order['status'], order['items'])
+    clear_menu()
+    my_mini_db.view_orders()
     try:
-        choice = int(input("Enter the index of the order you want to update: "))
-        selected_order = orders_list[choice]
+        choice = int(input("Enter the ID of the order you want to update: "))
     except (ValueError, IndexError):
         print("Invalid order selection.")
         return
@@ -87,45 +85,32 @@ def update_order():
     print("Press Enter to leave a field unchanged.")
 
     try:
-        new_customer_name = input(f"New customer name (current: {selected_order['customer_name']}): ")
-        new_customer_address = input(f"New address (current: {selected_order['customer_address']}): ")
-        new_customer_phone = input(f"New phone number (current: {selected_order['customer_phone']}): ")
-        new_courier = input(f"New courier number (current: {selected_order['courier']}): ")
-        new_items = str(input(f"New items (current: {selected_order['items']}): "))
+        new_customer_name = input("Enter New Customer Name: ")
+        new_customer_address = input("Enter New Customer Address: ")
+        new_customer_phone = input("Enter New Phone Number: ")
+        new_items = str(input("Enter New items: "))
     except Exception:
         print('Invalid Input! Try Again')
         return
 
-    if new_customer_name:
-        orders_list[choice]['customer_name'] = new_customer_name
-    if new_customer_address:
-        orders_list[choice]['customer_address'] = new_customer_address
-    if new_customer_phone:
-        try:
-            orders_list[choice]['customer_phone'] = int(new_customer_phone)
-        except ValueError:
-            print("Invalid phone number. Keeping previous value.")
-    if new_courier:
-        orders_list[choice]['courier'] = new_courier
-    if new_items:
-        orders_list[choice]['items'] = new_items
-    
 
     try:
-        with open(Orders_Path, 'w', newline='') as file:
-            csv_writer = csv.writer(file, delimiter=',')
-            csv_writer.writerow(['customer_name', 'customer_address', 'customer_phone', 'courier', 'status', 'items'])
-            for order in orders_list:
-                csv_writer.writerow([
-                    order['customer_name'],
-                    order['customer_address'],
-                    order['customer_phone'],
-                    order['courier'],
-                    order['status'],
-                    order['items']
-                ])
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        update_sql = """
+            UPDATE orders
+            SET customer_name = %s, customer_address = %s, customer_phone = %s, items = %s
+            WHERE order_id = %s
+        """
+        cursor.execute(update_sql, (new_customer_name, new_customer_address, new_customer_phone, new_items , choice))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Order Updated in the database successfully.")
     except Exception as e:
-        print('Error Updating Orders!', e)
+        print("Failed to Update Order in the database:", e)
 
     
 
