@@ -106,7 +106,7 @@ This project includes a `docker-compose.yml` file (located in the `data/` folder
 	```
 3. This will start all services defined in the compose file. Adjust the compose file as needed for your environment.
 
-> Note: The CLI app itself is run with Python as described above. Docker Compose is optional and only needed if you want to use the services defined in `docker-compose.yml`.
+> Note: The CLI app itself is run with Python as described above. Docker Compose is  and needed if you want to to use the database on adminer `docker-compose.yml`.
 
 ## License
 This project is licensed under the terms of the LICENSE file.
