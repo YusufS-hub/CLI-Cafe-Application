@@ -18,6 +18,7 @@ Cafe App/
 │   ├── orders.csv
 │   ├── products-database.sql
 │   └── products.csv
+│   └── docker-compose.yml
 ├── notes/
 │   └── mini-project-week-5.md
 ├── source/
@@ -81,9 +82,31 @@ When you start the app, you'll see a welcome message and a main menu:
 
 Select an option by entering the corresponding number. Each submenu allows you to manage products, orders, or couriers interactively.
 
+### Loading Animation
+The app uses a simple loading animation for a better user experience when performing actions:
+
+```python
+from utilities import loading_animation
+loading_animation()  # Shows a brief loading spinner in the CLI
+```
+This function is called before displaying data or after certain actions to indicate progress.
+
 ## Data Files
 - All data is stored in CSV files in the `data/` folder.
 - No external database setup is required.
+
+## Docker Support
+This project includes a `docker-compose.yml` file (located in the `data/` folder) for containerized deployment or development. You can use Docker to run supporting services if needed (e.g., a database or other dependencies).
+
+### How to Use Docker Compose
+1. Make sure Docker is installed and running on your system.
+2. From the project root, run:
+	```powershell
+	docker-compose -f data/docker-compose.yml up
+	```
+3. This will start all services defined in the compose file. Adjust the compose file as needed for your environment.
+
+> Note: The CLI app itself is run with Python as described above. Docker Compose is optional and only needed if you want to use the services defined in `docker-compose.yml`.
 
 ## License
 This project is licensed under the terms of the LICENSE file.
